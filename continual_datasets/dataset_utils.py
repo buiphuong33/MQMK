@@ -1,11 +1,3 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
-#
-# This source code is licensed under the license found in the
-# LICENSE file in the root directory of this source tree.
-
-
-# https://github.com/pytorch/vision/blob/8635be94d1216f10fb8302da89233bd86445e449/torchvision/datasets/utils.py
-
 import os
 import os.path
 import hashlib
