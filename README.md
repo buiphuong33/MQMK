@@ -63,7 +63,7 @@ We have fixed the random seed, and we hope you will obtain the same results as w
 `--multi_query True` corresponds to MQ, while the opposite is SQ.  
 `--multi_key True` corresponds to MK, while the opposite is SK.  
 You can easily set these two parameters to achieve the same ablation studies as in the paper.
-
+`--fast True` corresponds to EQ, while the opposite is MQ.
 `--e_prompt_layer_idx` specifies the depth of the e-prompt, and `--length` specifies the length of the e-prompt.
 `--class_group` specifies how many categories share a single key. Setting it to 1 indicates that class-level keys are used.
 `--k_key` corresponds to $K$ in the paper.
