@@ -134,3 +134,5 @@ def get_args_parser(subparsers):
 
     # Misc parameters
     subparsers.add_argument('--print_freq', type=int, default=10, help = 'The frequency of printing')
+
+    subparsers.add_argument('--fast', default=False, type=str2bool)

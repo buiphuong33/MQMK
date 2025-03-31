@@ -83,7 +83,9 @@ class EPrompt(nn.Module):
         x_inv_norm = torch.rsqrt(torch.maximum(square_sum, torch.tensor(epsilon, device=x.device)))
         return x * x_inv_norm
     
-    def forward(self, x_embed, prompt_mask=None, cls_features=None, query=False,task_id =None,target=None):
+    def forward(self, x_embed, prompt_mask=None, cls_features=None, query=False,task_id =None,target=None,fast3=False):
+        if fast3:
+            self.multi_query = False
         out = dict()
         # print('e_prompt_forward')
         if self.prompt_pool:
@@ -314,4 +316,6 @@ class EPrompt(nn.Module):
         
         out['batched_prompt'] = batched_prompt
 
+        if fast3:
+            self.multi_query = True
         return out

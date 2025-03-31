@@ -1,3 +1,29 @@
+""" Vision Transformer (ViT) in PyTorch
+
+A PyTorch implement of Vision Transformers as described in:
+
+'An Image Is Worth 16 x 16 Words: Transformers for Image Recognition at Scale'
+    - https://arxiv.org/abs/2010.11929
+
+`How to train your ViT? Data, Augmentation, and Regularization in Vision Transformers`
+    - https://arxiv.org/abs/2106.10270
+
+The official jax code is released and available at https://github.com/google-research/vision_transformer
+
+Acknowledgments:
+* The paper authors for releasing code and weights, thanks!
+* I fixed my class token impl based on Phil Wang's https://github.com/lucidrains/vit-pytorch ... check it out
+for some einops/einsum fun
+* Simple transformer style inspired by Andrej Karpathy's https://github.com/karpathy/minGPT
+* Bert reference code checks against Huggingface Transformers and Tensorflow Bert
+
+Hacked together by / Copyright 2020, Ross Wightman
+# ------------------------------------------
+# Modification:
+# Added code for dualprompt implementation
+# -- Jaeho Lee, dlwogh9344@khu.ac.kr
+# ------------------------------------------
+"""
 import math
 import logging
 from functools import partial
@@ -501,7 +527,7 @@ class VisionTransformer(nn.Module):
             self.global_pool = global_pool
         self.head = nn.Linear(self.embed_dim, num_classes) if num_classes > 0 else nn.Identity()
 
-    def forward_features(self, x, task_id=-1, cls_features=None, train=False, query=False,target=None):
+    def forward_features(self, x, task_id=-1, cls_features=None, train=False, query=False,target=None,fast1=False,fast2=False,fast3=False,avg_prompt=None):
         x = self.patch_embed(x)
 
         if self.cls_token is not None:
@@ -538,8 +564,17 @@ class VisionTransformer(nn.Module):
                     # print('--------------------------------------')
                     res = self.e_prompt(x, prompt_mask=prompt_mask, cls_features=cls_features,query=query,task_id=task_id,target=target)
                 else:
-                    res = self.e_prompt(x, prompt_mask=prompt_mask, cls_features=cls_features,query=query,task_id=task_id)
+                    res = self.e_prompt(x, prompt_mask=prompt_mask, cls_features=cls_features,query=query,task_id=task_id,fast3=fast3)
                 e_prompt = res['batched_prompt']
+                if fast2:
+                    # print('--------------------------------------')
+                    # print(e_prompt.shape)
+                    # print(avg_prompt.shape)
+                    # print('--------------------------------------')
+                    # exit(0)
+                    e_prompt = avg_prompt
+                if fast1:
+                    return res
                 # res['idx']是查询到的prompt的索�?
                 # task_id 是完美匹配应用用的索�?
                 # if task_id >= 3 and train == False and query == False:
@@ -637,8 +672,10 @@ class VisionTransformer(nn.Module):
         
         return res
         
-    def forward(self, x, task_id=-1, cls_features=None, train=False,query=False,target=None):
-        res = self.forward_features(x, task_id=task_id, cls_features=cls_features, train=train,query=query,target=target)
+    def forward(self, x, task_id=-1, cls_features=None, train=False,query=False,target=None,fast1=False,fast2=False,fast3=False,avg_prompt=None):
+        res = self.forward_features(x, task_id=task_id, cls_features=cls_features, train=train,query=query,target=target,fast1=fast1,fast2=fast2,fast3=fast3,avg_prompt=avg_prompt)
+        if fast1:
+            return res
         if train==False and query==False and self.using_new_classifier:
         #     # print('--------------------------------------')
         #     # print('using new_classifier')

@@ -425,33 +425,44 @@ def evaluate(model: torch.nn.Module, original_model: torch.nn.Module, data_loade
         for input, target in metric_logger.log_every(data_loader, args.print_freq, header):
             input = input.to(device, non_blocking=True)
             target = target.to(device, non_blocking=True)
-            # print('target:',target)
-            # print(target)
-            # print("task_id",task_id)
-            # compute output
-            if args.multi_query==False:
-                if original_model is not None:
-                    output = original_model(input)
-                    cls_features = output['pre_logits']
-                else:
-                    cls_features = None
-            else:
-                feature_list= []
+            if args.fast:
+                assert args.multi_query==True
+                prompt_list=[]
                 for i in range(task_id+1):
-                    output = model(input, task_id=i,query=True)
-                        
-                    
-                    feature_list.append(output['pre_logits'])
-                for i in range(task_id+1, args.num_tasks):
-                    feature_list.append(torch.zeros((input.shape[0], 768)).to(device))
-                    # feature_list.append(torch.zeros((input.shape[0], 768)))
-                cls_features = torch.stack(feature_list, dim=1)
+                    output = model(input, task_id=i,query=True,fast1=True,fast2=False,fast3=False)
+                    prompt_list.append(output['batched_prompt'])
+                avg_prompt = torch.mean(torch.stack([p.cpu() for p in prompt_list]), dim=0)
 
-            if model.perfect_match:
-                output = model(input, task_id=subtask_id, cls_features=cls_features)
+                # 将结果转移回 GPU
+                avg_prompt = avg_prompt.to(prompt_list[0].device)
+                output = model(input, task_id=task_id, query=True,fast1=False,fast2=True,fast3=False,avg_prompt=avg_prompt)
+                cls_features = output['pre_logits']
+                output = model(input, task_id=task_id, cls_features=cls_features,fast1=False,fast2=False,fast3=True)
+                logits = output['logits']
             else:
-                output = model(input, task_id=task_id, cls_features=cls_features)
-            logits = output['logits']
+                if args.multi_query==False:
+                    if original_model is not None:
+                        output = original_model(input)
+                        cls_features = output['pre_logits']
+                        # print('cls_features:',cls_features.shape)
+                    else:
+                        cls_features = None
+                else:
+                    feature_list= []
+                    for i in range(task_id+1):
+                        output = model(input, task_id=i,query=True)
+                        feature_list.append(output['pre_logits'])
+                    for i in range(task_id+1, args.num_tasks):
+                        feature_list.append(torch.zeros((input.shape[0], 768)).to(device))
+                        # feature_list.append(torch.zeros((input.shape[0], 768)))
+                    cls_features = torch.stack(feature_list, dim=1)
+                    # print('cls_features:',cls_features.shape)
+
+                if model.perfect_match:
+                    output = model(input, task_id=subtask_id, cls_features=cls_features)
+                else:
+                    output = model(input, task_id=task_id, cls_features=cls_features)
+                logits = output['logits']
 
 
             # print('-----------------------')
