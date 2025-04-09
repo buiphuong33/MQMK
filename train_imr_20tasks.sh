@@ -11,7 +11,7 @@ python main.py \
         --NCM False \
         --Match_NCM False \
         --gpu_devices 0 \
-        --length 80 \
+        --length 20 \
         --epochs 150 \
         --use_g_prompt True \
         --g_prompt_layer_idx 0 1 \
